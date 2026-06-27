@@ -1,7 +1,16 @@
 {
   "imports": {
-    "@enclave/sign-sdk/decrypt": "../../../../Enclave-Sign/enclave-sign-sdk/dist/decrypt-envelope.js",
-    "@enclave/sign-sdk/envelope": "../../../../Enclave-Sign/enclave-sign-sdk/dist/envelope-crypto.js",
-    "@enclave/pqc-core": "../../../enclave-pqc-core/dist/index.js"
+    "@enclave/sign-sdk/decrypt": "./_vendor/sign-sdk/decrypt-envelope.js",
+    "@enclave/sign-sdk/envelope": "./_vendor/sign-sdk/envelope-crypto.js",
+    "@enclave/pqc-core": "./_vendor/pqc-core/index.js",
+    "@noble/ciphers/aes.js": "npm:@noble/ciphers@1.3.0/aes.js",
+    "@noble/ciphers": "npm:@noble/ciphers@1.3.0",
+    "@noble/hashes/sha3.js": "npm:@noble/hashes@1.8.0/sha3.js",
+    "@noble/hashes/sha2.js": "npm:@noble/hashes@1.8.0/sha2.js",
+    "@noble/hashes": "npm:@noble/hashes@1.8.0",
+    "@noble/post-quantum/ml-kem.js": "npm:@noble/post-quantum@0.6.1/ml-kem.js",
+    "@noble/post-quantum/ml-dsa.js": "npm:@noble/post-quantum@0.6.1/ml-dsa.js",
+    "@noble/post-quantum/utils.js": "npm:@noble/post-quantum@0.6.1/utils.js",
+    "@noble/post-quantum": "npm:@noble/post-quantum@0.6.1"
   }
 }

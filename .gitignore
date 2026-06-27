@@ -3,3 +3,5 @@ dist/
 *.tsbuildinfo
 .DS_Store
 .supabase/
+supabase/.temp/
+supabase/functions/_vendor/

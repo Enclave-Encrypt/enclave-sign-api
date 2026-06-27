@@ -23,6 +23,7 @@ entrypoint = "./functions/sign-open-envelope/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/sign-complete-recipient/index.ts"
+import_map = "./functions/deno.json"
 
 [functions.sign-send-invite]
 enabled = true

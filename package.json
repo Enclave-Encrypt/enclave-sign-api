@@ -1,0 +1,9 @@
+{
+  "name": "enclave-sign-api",
+  "private": true,
+  "scripts": {
+    "vendor": "node scripts/vendor-sign-sdk.mjs",
+    "predeploy": "npm run vendor",
+    "deploy": "npm run vendor && supabase functions deploy sign-open-envelope sign-complete-recipient sign-send-invite sign-download-completed --project-ref kltykhkcvdwhfjgvevbt --import-map ./supabase/functions/deno.json"
+  }
+}
