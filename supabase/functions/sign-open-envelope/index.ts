@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { hashSigningToken } from "@enclave/sign-sdk/signing-tokens";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,16 +22,6 @@ function readServiceRoleKey(): string {
   } catch {
     return "";
   }
-}
-
-async function hashToken(token: string): Promise<string> {
-  const digest = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(token.trim()),
-  );
-  return Array.from(new Uint8Array(digest))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
 }
 
 Deno.serve(async (req) => {
@@ -70,7 +61,7 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const tokenHash = await hashToken(token);
+    const tokenHash = hashSigningToken(token);
 
     const { data: recipient, error: recipientError } = await admin
       .from("sign_envelope_recipients")
