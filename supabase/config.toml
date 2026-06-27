@@ -1,0 +1,35 @@
+# For detailed configuration reference documentation, visit:
+# https://supabase.com/docs/guides/local-development/cli/config
+project_id = "enclave-sign-api"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 55433
+major_version = 17
+
+[functions.sign-open-envelope]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/sign-open-envelope/index.ts"
+
+[functions.sign-complete-recipient]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/sign-complete-recipient/index.ts"
+
+[functions.sign-send-invite]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/sign-send-invite/index.ts"
+
+[functions.sign-download-completed]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/sign-download-completed/index.ts"

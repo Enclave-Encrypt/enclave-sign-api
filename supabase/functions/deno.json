@@ -1,0 +1,7 @@
+{
+  "imports": {
+    "@enclave/sign-sdk/decrypt": "../../../../Enclave-Sign/enclave-sign-sdk/dist/decrypt-envelope.js",
+    "@enclave/sign-sdk/envelope": "../../../../Enclave-Sign/enclave-sign-sdk/dist/envelope-crypto.js",
+    "@enclave/pqc-core": "../../../enclave-pqc-core/dist/index.js"
+  }
+}
