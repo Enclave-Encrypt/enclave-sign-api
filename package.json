@@ -4,6 +4,8 @@
   "scripts": {
     "vendor": "node scripts/vendor-sign-sdk.mjs",
     "predeploy": "npm run vendor",
-    "deploy": "npm run vendor && supabase functions deploy sign-open-envelope sign-complete-recipient sign-send-invite sign-download-completed --project-ref kltykhkcvdwhfjgvevbt --import-map ./supabase/functions/deno.json"
+    "deploy:db": "npx supabase db push",
+    "deploy:functions": "npm run vendor && supabase functions deploy exchange-account-token sign-open-envelope sign-complete-recipient sign-send-invite sign-download-completed --project-ref dqjwchquqeznftdnncec --import-map ./supabase/functions/deno.json",
+    "deploy": "npm run deploy:db && npm run deploy:functions"
   }
 }

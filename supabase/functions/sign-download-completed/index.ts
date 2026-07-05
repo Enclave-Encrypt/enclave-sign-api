@@ -62,8 +62,8 @@ Deno.serve(async (req) => {
     if (body.token?.trim()) {
       const tokenHash = hashSigningToken(body.token);
       const { data: recipient, error: recipientError } = await admin
-        .from("sign_envelope_recipients")
-        .select("envelope_id, status, sign_envelopes(status)")
+        .from("envelope_recipients")
+        .select("envelope_id, status, envelopes(status)")
         .eq("signing_token_hash", tokenHash)
         .maybeSingle();
 
@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      const envelope = recipient.sign_envelopes as { status: string } | null;
+      const envelope = recipient.envelopes as { status: string } | null;
       if (!envelope || envelope.status !== "completed") {
         return new Response(JSON.stringify({ error: "Envelope not completed" }), {
           status: 409,
@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
       }
 
       const { data: envelope, error: envelopeError } = await admin
-        .from("sign_envelopes")
+        .from("envelopes")
         .select("id, status, enclave_user_id")
         .eq("id", envelopeId)
         .maybeSingle();
@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
     }
 
     const { data: artifacts, error: artifactsError } = await admin
-      .from("sign_envelope_completed_artifacts")
+      .from("envelope_completed_artifacts")
       .select("id, document_id, artifact_type, file_name, storage_path, byte_size")
       .eq("envelope_id", envelopeId)
       .order("artifact_type", { ascending: true })

@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
     const tokenHash = hashSigningToken(token);
 
     const { data: recipient, error: recipientError } = await admin
-      .from("sign_envelope_recipients")
+      .from("envelope_recipients")
       .select("id, envelope_id, status, encryption_metadata")
       .eq("signing_token_hash", tokenHash)
       .maybeSingle();
@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
 
     if (action === "sign") {
       const { data: recipientFields, error: recipientFieldsError } = await admin
-        .from("sign_envelope_fields")
+        .from("envelope_fields")
         .select("id, required, value")
         .eq("recipient_id", recipient.id);
 
@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
         }
 
         const { error: fieldUpdateError } = await admin
-          .from("sign_envelope_fields")
+          .from("envelope_fields")
           .update({
             value: fieldValues.get(field.id as string),
             filled_at: filledAt,
@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
     >;
 
     const { error: updateRecipientError } = await admin
-      .from("sign_envelope_recipients")
+      .from("envelope_recipients")
       .update({
         status: action === "sign" ? "signed" : "declined",
         signed_at: signedAt,
@@ -195,7 +195,7 @@ Deno.serve(async (req) => {
     }
 
     const { data: recipients, error: recipientsError } = await admin
-      .from("sign_envelope_recipients")
+      .from("envelope_recipients")
       .select("status")
       .eq("envelope_id", recipient.envelope_id);
 
@@ -219,7 +219,7 @@ Deno.serve(async (req) => {
     }
 
     const { error: envelopeUpdateError } = await admin
-      .from("sign_envelopes")
+      .from("envelopes")
       .update({
         status: envelopeStatus,
         updated_at: signedAt,

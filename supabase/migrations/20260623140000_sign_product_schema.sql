@@ -1,5 +1,4 @@
--- SIGN PRODUCT: co-located in Enclave Social data (kltykhkcvdwhfjgvevbt).
--- Migrate to a dedicated Enclave Sign Supabase project when ready.
+-- SIGN PRODUCT: Enclave Sign dedicated data project.
 
 create table public.sign_accounts (
   id uuid primary key default gen_random_uuid(),
@@ -8,7 +7,7 @@ create table public.sign_accounts (
 );
 
 comment on table public.sign_accounts is
-  'SIGN PRODUCT: migrate to Enclave-Sign Supabase project when Pro';
+  'SIGN PRODUCT: one row per Enclave Account user';
 
 create index sign_accounts_enclave_user_id_idx
   on public.sign_accounts (enclave_user_id);
@@ -26,7 +25,7 @@ create table public.sign_envelopes (
 );
 
 comment on table public.sign_envelopes is
-  'SIGN PRODUCT: migrate to Enclave-Sign Supabase project when Pro';
+  'SIGN PRODUCT: envelope metadata and lifecycle status';
 
 create index sign_envelopes_enclave_user_id_idx
   on public.sign_envelopes (enclave_user_id, updated_at desc);
@@ -46,7 +45,7 @@ create table public.sign_envelope_recipients (
 );
 
 comment on table public.sign_envelope_recipients is
-  'SIGN PRODUCT: migrate to Enclave-Sign Supabase project when Pro';
+  'SIGN PRODUCT: signers on an envelope';
 
 create index sign_envelope_recipients_envelope_id_idx
   on public.sign_envelope_recipients (envelope_id, signing_order);
@@ -62,7 +61,7 @@ create table public.sign_envelope_documents (
 );
 
 comment on table public.sign_envelope_documents is
-  'SIGN PRODUCT: migrate to Enclave-Sign Supabase project when Pro';
+  'SIGN PRODUCT: document metadata for an envelope';
 
 create index sign_envelope_documents_envelope_id_idx
   on public.sign_envelope_documents (envelope_id);

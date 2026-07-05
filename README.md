@@ -10,12 +10,13 @@ The Sign **app** is [`Enclave-Sign/enclave-sign`](https://github.com/Enclave-Sig
 enclave-sign-api/
   supabase/
     functions/
+      exchange-account-token/
       sign-open-envelope/
       sign-complete-recipient/
       sign-send-invite/
       sign-download-completed/
       _shared/sign/          # PDF helpers; decrypt re-exports sign-sdk
-    migrations/              # sign_* schema (2026062314–2026062319)
+    migrations/              # sign_* schema + billing guards
 ```
 
 ## Dependencies (closed loop)
@@ -29,29 +30,30 @@ Local Deno import map: `supabase/functions/deno.json` (paths to sibling repos).
 
 ## Deploy
 
-Currently colocated on the Social data Supabase project (`kltykhkcvdwhfjgvevbt`) until a dedicated Sign data project exists.
+Link your **dedicated Sign data** Supabase project, then push schema and deploy functions:
 
 ```bash
-npx supabase link --project-ref kltykhkcvdwhfjgvevbt
-npx supabase db push
-npx supabase functions deploy sign-open-envelope
-npx supabase functions deploy sign-complete-recipient
-npx supabase functions deploy sign-send-invite
-npx supabase functions deploy sign-download-completed
+npx supabase link --project-ref dqjwchquqeznftdnncec
+npm run deploy
 ```
 
-Build SDKs before deploying functions:
+`npm run deploy` runs `db push` then deploys all Sign edge functions. Build SDKs before first deploy:
 
 ```bash
 cd ../enclave-pqc-core && npm run build
 cd ../../Enclave-Sign/enclave-sign-sdk && npm run build
 ```
 
+### Account JWT trust
+
+In Sign **Project Settings → JWT Signing Keys**, add verification for Account JWKS (`https://eyqaeigblulbtnorqyts.supabase.co/auth/v1/.well-known/jwks.json`) so `exchange-account-token` sessions validate at the gateway.
+
 ## Secrets
 
 | Secret | Used by |
 |--------|---------|
 | `SUPABASE_SERVICE_ROLE_KEY` | All handlers |
+| `ACCOUNT_SUPABASE_URL` / `ACCOUNT_SUPABASE_ANON_KEY` | `exchange-account-token` |
 | `RESEND_API_KEY` | `sign-send-invite` |
 
 ## License

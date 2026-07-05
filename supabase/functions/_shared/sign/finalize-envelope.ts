@@ -26,7 +26,7 @@ export async function finalizeEnvelopeIfNeeded(
   envelopeId: string,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
   const { data: envelope, error: envelopeError } = await admin
-    .from("sign_envelopes")
+    .from("envelopes")
     .select("id, subject, status, finalized_at, enclave_user_id, completed_at")
     .eq("id", envelopeId)
     .maybeSingle();
@@ -44,13 +44,13 @@ export async function finalizeEnvelopeIfNeeded(
   }
 
   const { count: artifactCount } = await admin
-    .from("sign_envelope_completed_artifacts")
+    .from("envelope_completed_artifacts")
     .select("id", { count: "exact", head: true })
     .eq("envelope_id", envelopeId);
 
   if ((artifactCount ?? 0) > 0) {
     await admin
-      .from("sign_envelopes")
+      .from("envelopes")
       .update({
         finalized_at: envelope.finalized_at ?? new Date().toISOString(),
         completed_at: envelope.completed_at ?? new Date().toISOString(),
@@ -60,7 +60,7 @@ export async function finalizeEnvelopeIfNeeded(
   }
 
   const { data: recipients, error: recipientsError } = await admin
-    .from("sign_envelope_recipients")
+    .from("envelope_recipients")
     .select(
       "id, name, email, signed_at, signature_algorithm, encryption_metadata, status",
     )
@@ -87,7 +87,7 @@ export async function finalizeEnvelopeIfNeeded(
   };
 
   const { data: documents, error: documentsError } = await admin
-    .from("sign_envelope_documents")
+    .from("envelope_documents")
     .select("id, file_name, content_type, content_hash, iv_base64, storage_path")
     .eq("envelope_id", envelopeId);
 
@@ -96,7 +96,7 @@ export async function finalizeEnvelopeIfNeeded(
   }
 
   const { data: fields, error: fieldsError } = await admin
-    .from("sign_envelope_fields")
+    .from("envelope_fields")
     .select(
       "document_id, field_type, page_index, x, y, width, height, value",
     )
@@ -107,7 +107,7 @@ export async function finalizeEnvelopeIfNeeded(
   }
 
   const { data: documentKeys, error: keysError } = await admin
-    .from("sign_envelope_document_keys")
+    .from("envelope_document_keys")
     .select("document_id, kem_ciphertext, wrapped_dek_b64, wrapped_dek_iv_b64")
     .eq("recipient_id", decryptRecipient.id);
 
@@ -245,7 +245,7 @@ export async function finalizeEnvelopeIfNeeded(
   });
 
   const { error: insertError } = await admin
-    .from("sign_envelope_completed_artifacts")
+    .from("envelope_completed_artifacts")
     .insert(artifactRows);
 
   if (insertError) {
@@ -253,7 +253,7 @@ export async function finalizeEnvelopeIfNeeded(
   }
 
   const { error: envelopeUpdateError } = await admin
-    .from("sign_envelopes")
+    .from("envelopes")
     .update({
       completed_at: envelope.completed_at ?? completedAt,
       finalized_at: completedAt,

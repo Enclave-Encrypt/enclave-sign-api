@@ -64,9 +64,9 @@ Deno.serve(async (req) => {
     const tokenHash = hashSigningToken(token);
 
     const { data: recipient, error: recipientError } = await admin
-      .from("sign_envelope_recipients")
+      .from("envelope_recipients")
       .select(
-        "id, name, email, status, encryption_metadata, sign_envelopes(id, subject, status, manifest_signature, manifest_algorithm, encryption_metadata, sign_accounts(mldsa_public_key))",
+        "id, name, email, status, encryption_metadata, envelopes(id, subject, status, manifest_signature, manifest_algorithm, encryption_metadata, accounts(mldsa_public_key))",
       )
       .eq("signing_token_hash", tokenHash)
       .maybeSingle();
@@ -78,14 +78,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    const envelope = recipient.sign_envelopes as {
+    const envelope = recipient.envelopes as {
       id: string;
       subject: string;
       status: string;
       manifest_signature: string | null;
       manifest_algorithm: string;
       encryption_metadata: Record<string, unknown>;
-      sign_accounts: { mldsa_public_key: string | null } | null;
+      accounts: { mldsa_public_key: string | null } | null;
     } | null;
 
     if (!envelope) {
@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
     }
 
     const { data: documents, error: documentsError } = await admin
-      .from("sign_envelope_documents")
+      .from("envelope_documents")
       .select("id, file_name, content_type, content_hash, iv_base64, storage_path")
       .eq("envelope_id", envelope.id);
 
@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
     }
 
     const { data: documentKeys, error: keysError } = await admin
-      .from("sign_envelope_document_keys")
+      .from("envelope_document_keys")
       .select("document_id, kem_ciphertext, wrapped_dek_b64, wrapped_dek_iv_b64")
       .eq("recipient_id", recipient.id);
 
@@ -174,7 +174,7 @@ Deno.serve(async (req) => {
     }
 
     const { data: fields, error: fieldsError } = await admin
-      .from("sign_envelope_fields")
+      .from("envelope_fields")
       .select(
         "id, document_id, field_type, page_index, x, y, width, height, required, label, placeholder, value",
       )
@@ -197,7 +197,7 @@ Deno.serve(async (req) => {
         recipientStatus: recipient.status,
         manifestSignature: envelope.manifest_signature,
         manifestAlgorithm: envelope.manifest_algorithm,
-        senderPublicKey: envelope.sign_accounts?.mldsa_public_key ?? null,
+        senderPublicKey: envelope.accounts?.mldsa_public_key ?? null,
         kemSecretKey: encryptionMetadata.kem_secret_key,
         documents: sessionDocuments,
         fields: (fields ?? []).map((field) => ({

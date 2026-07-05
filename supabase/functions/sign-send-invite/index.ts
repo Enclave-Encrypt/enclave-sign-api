@@ -187,7 +187,7 @@ Deno.serve(async (req) => {
     }
 
     const { data: envelope, error: envelopeError } = await userClient
-      .from("sign_envelopes")
+      .from("envelopes")
       .select("id")
       .eq("id", envelopeId)
       .eq("enclave_user_id", user.id)

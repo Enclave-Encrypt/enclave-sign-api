@@ -14,6 +14,11 @@ port = 54322
 shadow_port = 55433
 major_version = 17
 
+[functions.exchange-account-token]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/exchange-account-token/index.ts"
+
 [functions.sign-open-envelope]
 enabled = true
 verify_jwt = false
