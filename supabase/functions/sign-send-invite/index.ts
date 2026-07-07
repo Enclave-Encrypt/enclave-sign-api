@@ -1,14 +1,24 @@
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import {
+  buildSigningUrl,
+  generateSigningToken,
+  hashSigningToken,
+} from "@enclave/sign-sdk/signing-tokens";
+
+import {
+  handleSignOptions,
+  jsonResponse,
+  requireSignPost,
+} from "../_shared/sign/http.ts";
+import {
+  createSignUserClient,
+  requireSignAnonConfig,
+} from "../_shared/sign/supabase.ts";
 
 type InviteInput = {
   recipient_id: string;
   email: string;
   name?: string | null;
-  signing_url: string;
+  signing_url?: string;
 };
 
 type SendInviteBody = {
@@ -25,6 +35,12 @@ function getResendApiKey(): string {
 function inviteFromAddress(): string {
   return Deno.env.get("SIGN_INVITE_FROM_EMAIL")?.trim() ??
     "Enclave Sign <noreply@enclave.talk>";
+}
+
+function signSiteUrl(): string {
+  return Deno.env.get("SIGN_SITE_URL")?.trim() ??
+    Deno.env.get("NEXT_PUBLIC_SIGN_SITE_URL")?.trim() ??
+    "https://sign.enclave.talk";
 }
 
 function escapeHtml(value: string): string {
@@ -124,42 +140,26 @@ async function sendResendEmail(input: {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  const options = handleSignOptions(req);
+  if (options) return options;
 
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+  const methodError = requireSignPost(req);
+  if (methodError) return methodError;
 
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
     const accessToken = authHeader.replace(/^Bearer\s+/i, "").trim();
 
     if (!accessToken) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "Unauthorized" }, 401);
     }
 
-    const socialUrl = Deno.env.get("SUPABASE_URL") ?? "";
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-
-    if (!socialUrl || !anonKey) {
-      return new Response(JSON.stringify({ error: "Server misconfigured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const config = requireSignAnonConfig();
+    if (!config) {
+      return jsonResponse({ error: "Server misconfigured" }, 500);
     }
 
-    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
-    const userClient = createClient(socialUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${accessToken}` } },
-    });
+    const userClient = createSignUserClient(config, accessToken);
 
     const {
       data: { user },
@@ -167,10 +167,7 @@ Deno.serve(async (req) => {
     } = await userClient.auth.getUser();
 
     if (userError || !user?.id) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "Unauthorized" }, 401);
     }
 
     const body = (await req.json()) as SendInviteBody;
@@ -180,10 +177,7 @@ Deno.serve(async (req) => {
     const senderName = body.sender_name?.trim() || "An Enclave user";
 
     if (!envelopeId || !subject || invites.length === 0) {
-      return new Response(JSON.stringify({ error: "Invalid request" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "Invalid request" }, 400);
     }
 
     const { data: envelope, error: envelopeError } = await userClient
@@ -194,11 +188,21 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (envelopeError || !envelope) {
-      return new Response(JSON.stringify({ error: "Envelope not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "Envelope not found" }, 404);
     }
+
+    const { data: envelopeRecipients, error: recipientsError } = await userClient
+      .from("envelope_recipients")
+      .select("id, email, status")
+      .eq("envelope_id", envelopeId);
+
+    if (recipientsError || !envelopeRecipients) {
+      return jsonResponse({ error: "Recipients not found" }, 404);
+    }
+
+    const recipientsById = new Map(
+      envelopeRecipients.map((entry) => [entry.id as string, entry]),
+    );
 
     const results: Array<{
       recipient_id: string;
@@ -210,16 +214,62 @@ Deno.serve(async (req) => {
 
     for (const invite of invites) {
       const email = invite.email?.trim().toLowerCase();
-      const signingUrl = invite.signing_url?.trim();
+      const recipientId = invite.recipient_id?.trim();
 
-      if (!email || !signingUrl || !invite.recipient_id) {
+      if (!email || !recipientId) {
         results.push({
-          recipient_id: invite.recipient_id ?? "",
+          recipient_id: recipientId ?? "",
           email: email ?? "",
           ok: false,
           reason: "invalid_invite",
         });
         continue;
+      }
+
+      const recipient = recipientsById.get(recipientId);
+      if (!recipient) {
+        results.push({
+          recipient_id: recipientId,
+          email,
+          ok: false,
+          reason: "recipient_not_found",
+        });
+        continue;
+      }
+
+      if ((recipient.email as string).toLowerCase() !== email) {
+        results.push({
+          recipient_id: recipientId,
+          email,
+          ok: false,
+          reason: "recipient_email_mismatch",
+        });
+        continue;
+      }
+
+      let signingUrl = invite.signing_url?.trim() ?? "";
+
+      if (!signingUrl) {
+        const token = generateSigningToken();
+        const tokenHash = hashSigningToken(token);
+
+        const { error: tokenUpdateError } = await userClient
+          .from("envelope_recipients")
+          .update({ signing_token_hash: tokenHash })
+          .eq("id", recipientId)
+          .eq("envelope_id", envelopeId);
+
+        if (tokenUpdateError) {
+          results.push({
+            recipient_id: recipientId,
+            email,
+            ok: false,
+            reason: "signing_link_failed",
+          });
+          continue;
+        }
+
+        signingUrl = buildSigningUrl(token, signSiteUrl());
       }
 
       const recipientName = invite.name?.trim() || email.split("@")[0] || "there";
@@ -237,7 +287,7 @@ Deno.serve(async (req) => {
       });
 
       results.push({
-        recipient_id: invite.recipient_id,
+        recipient_id: recipientId,
         email,
         ok: sent.ok,
         reason: sent.ok ? undefined : sent.reason,
@@ -247,20 +297,14 @@ Deno.serve(async (req) => {
 
     const sentCount = results.filter((entry) => entry.ok).length;
 
-    return new Response(
-      JSON.stringify({
-        ok: sentCount > 0,
-        sent: sentCount,
-        failed: results.length - sentCount,
-        results,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return jsonResponse({
+      ok: sentCount > 0,
+      sent: sentCount,
+      failed: results.length - sentCount,
+      results,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: message }, 500);
   }
 });
