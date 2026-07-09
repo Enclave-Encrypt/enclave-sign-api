@@ -1,0 +1,12 @@
+---
+description: Core standards for enclave-sign-api
+alwaysApply: true
+---
+
+# enclave-sign-api standards
+
+- Supabase edge handlers orchestrate; cryptography comes from vendored `@enclave/sign-sdk`.
+- Never duplicate crypto inline or import `@noble/*` in handler code.
+- `supabase/functions/_vendor/` is generated — run `npm run vendor` before deploy.
+- Handler helpers live in `supabase/functions/_shared/sign/`.
+- Build sibling `enclave-pqc-primitives` and `enclave-sign-sdk` before `npm run vendor`.

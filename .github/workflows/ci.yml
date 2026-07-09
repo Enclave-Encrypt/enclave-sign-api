@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: Enclave-Encrypt/enclave-sign-api
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Enclave-Inc/enclave-pqc-primitives
+          path: Enclave-Inc/enclave-pqc-primitives
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Enclave-Sign/enclave-sign-sdk
+          path: Enclave-Sign/enclave-sign-sdk
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Build crypto packages
+        run: |
+          cd Enclave-Inc/enclave-pqc-primitives && npm ci && npm run build
+          cd ../../Enclave-Sign/enclave-sign-sdk && npm ci && npm run build
+
+      - name: Vendor SDK for Deno
+        working-directory: Enclave-Encrypt/enclave-sign-api
+        run: npm run vendor

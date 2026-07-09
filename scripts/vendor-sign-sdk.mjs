@@ -6,8 +6,14 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const vendorRoot = join(root, "supabase", "functions", "_vendor");
 
 const signSdkDist = resolve(root, "..", "..", "Enclave-Sign", "enclave-sign-sdk", "dist");
-const pqcCoreRoot = resolve(root, "..", "enclave-pqc-core");
-const pqcCoreDist = join(pqcCoreRoot, "dist");
+const pqcPrimitivesRoot = resolve(
+  root,
+  "..",
+  "..",
+  "Enclave-Inc",
+  "enclave-pqc-primitives",
+);
+const pqcPrimitivesDist = join(pqcPrimitivesRoot, "dist");
 
 function copyDist(source, target) {
   rmSync(target, { recursive: true, force: true });
@@ -16,10 +22,10 @@ function copyDist(source, target) {
 }
 
 copyDist(signSdkDist, join(vendorRoot, "sign-sdk"));
-copyDist(pqcCoreDist, join(vendorRoot, "pqc-core"));
+copyDist(pqcPrimitivesDist, join(vendorRoot, "pqc-primitives"));
 cpSync(
-  join(pqcCoreRoot, "ENCLAVE_PQ_SUITE_v1.json"),
+  join(pqcPrimitivesRoot, "registry", "ENCLAVE_PQ_SUITE_v1.json"),
   join(vendorRoot, "ENCLAVE_PQ_SUITE_v1.json"),
 );
 
-console.log("Vendored sign-sdk and pqc-core into supabase/functions/_vendor/");
+console.log("Vendored sign-sdk and pqc-primitives into supabase/functions/_vendor/");
